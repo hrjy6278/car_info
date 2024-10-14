@@ -46,7 +46,7 @@ app.*.map.json
 
 # code generator
 *.g.dart
-*.
+*.freezed.dart
 
 # cocoapod
 *.lock
