@@ -14,7 +14,7 @@ abstract class CarRemoteDataSource {
 @Injectable(as: CarRemoteDataSource)
 class CarRemoteDataSourceImpl implements CarRemoteDataSource {
   final FirebaseFirestore firestore;
-  final dbField = 'cars';
+  final dbField = 'cars'; // 컬렉션 이름
 
   CarRemoteDataSourceImpl(this.firestore);
 
@@ -23,27 +23,33 @@ class CarRemoteDataSourceImpl implements CarRemoteDataSource {
     List<Car> cars = [];
 
     try {
-      QuerySnapshot snapshot = await firestore
-          .collection(dbField)
-          .where('model', isEqualTo: keyword)
-          .get();
+      final snapshot = await firestore.collection(dbField).doc(keyword).get();
 
-      for (final doc in snapshot.docs) {
-        cars.add(Car.fromJson(doc.data() as Map<String, dynamic>));
-      }
+      if (snapshot.exists) {
+        final data = snapshot.data() as Map<String, dynamic>;
 
-      if (cars.isEmpty) {
+        for (final carData in data['cars'] ?? []) {
+          cars.add(Car.fromJson(carData as Map<String, dynamic>));
+        }
+
+        if (cars.isEmpty) {
+          return APIResult(
+            code: 404,
+            message: 'No cars found for keyword: $keyword',
+          );
+        } else {
+          return APIResult(
+            code: 200,
+            message: '성공',
+            data: cars,
+          );
+        }
+      } else {
         return APIResult(
           code: 404,
-          message: 'No cars found for keyword: $keyword',
+          message: 'No document found for keyword: $keyword',
         );
       }
-
-      return APIResult(
-        code: 200,
-        message: '성공',
-        data: cars,
-      );
     } catch (e) {
       return APIResult(
         code: 500,
@@ -57,12 +63,13 @@ class CarRemoteDataSourceImpl implements CarRemoteDataSource {
     required String keyword,
     required List<Car> cars,
   }) async {
-    for (final car in cars) {
-      try {
-        await firestore.collection(dbField).add(car.toJson());
-      } catch (e) {
-        print("Error saving car data: $e");
-      }
-    }
+    // 각 모델 데이터를 배열로 저장
+    List<Map<String, dynamic>> carList =
+        cars.map((car) => car.toJson()).toList();
+
+    // keyword에 해당하는 문서에 자동차 데이터 저장
+    await firestore.collection(dbField).doc(keyword).set({
+      dbField: carList,
+    });
   }
 }
