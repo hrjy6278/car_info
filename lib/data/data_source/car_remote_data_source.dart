@@ -1,9 +1,10 @@
+import 'package:car_info/data/api_result/api_result.dart';
 import 'package:car_info/domain/entities/car.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:injectable/injectable.dart';
 
 abstract class CarRemoteDataSource {
-  Future<List<Car>> getCarData(String keyword);
+  Future<APIResult<List<Car>>> getCarData(String keyword);
   Future<void> saveCarsData({
     required String keyword,
     required List<Car> cars,
@@ -14,10 +15,11 @@ abstract class CarRemoteDataSource {
 class CarRemoteDataSourceImpl implements CarRemoteDataSource {
   final FirebaseFirestore firestore;
   final dbField = 'cars';
+
   CarRemoteDataSourceImpl(this.firestore);
 
   @override
-  Future<List<Car>> getCarData(String keyword) async {
+  Future<APIResult<List<Car>>> getCarData(String keyword) async {
     List<Car> cars = [];
 
     try {
@@ -29,11 +31,25 @@ class CarRemoteDataSourceImpl implements CarRemoteDataSource {
       for (final doc in snapshot.docs) {
         cars.add(Car.fromJson(doc.data() as Map<String, dynamic>));
       }
-    } catch (e) {
-      print("Error fetching car data: $e");
-    }
 
-    return cars;
+      if (cars.isEmpty) {
+        return APIResult(
+          code: 404,
+          message: 'No cars found for keyword: $keyword',
+        );
+      }
+
+      return APIResult(
+        code: 200,
+        message: '성공',
+        data: cars,
+      );
+    } catch (e) {
+      return APIResult(
+        code: 500,
+        message: 'Failed to fetch data from Firestore: $e',
+      );
+    }
   }
 
   @override
@@ -43,7 +59,7 @@ class CarRemoteDataSourceImpl implements CarRemoteDataSource {
   }) async {
     for (final car in cars) {
       try {
-        await firestore.collection('cars').add(car.toJson());
+        await firestore.collection(dbField).add(car.toJson());
       } catch (e) {
         print("Error saving car data: $e");
       }

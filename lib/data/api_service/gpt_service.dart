@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:car_info/domain/entities/car.dart';
+import 'package:car_info/data/api_result/api_result.dart';
 import 'package:chat_gpt_sdk/chat_gpt_sdk.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:injectable/injectable.dart';
@@ -18,7 +19,7 @@ class GptService {
     );
   }
 
-  Future<List<Car>> fetchCarsDataFromGpt(String query) async {
+  Future<APIResult<List<Car>>> fetchCarsDataFromGpt(String query) async {
     try {
       final request = ChatCompleteText(
         model: Gpt4oMini2024ChatModel(),
@@ -36,15 +37,16 @@ class GptService {
 
       if (response != null && response.choices.isNotEmpty) {
         final message = response.choices.first.message;
-        if (message == null) return [];
-
-        return _parseCarsData(message.content);
+        if (message == null) {
+          return APIResult(code: 400, message: 'GPT 응답이 비어 있습니다.');
+        }
+        final cars = _parseCarsData(message.content);
+        return APIResult(code: 200, message: '성공', data: cars);
       } else {
-        throw Exception('Failed to fetch data from GPT');
+        return APIResult(code: 400, message: 'GPT에서 데이터를 가져오지 못했습니다.');
       }
     } catch (e) {
-      print('Error fetching data from GPT: $e');
-      rethrow;
+      return APIResult(code: 500, message: 'Error fetching data from GPT: $e');
     }
   }
 

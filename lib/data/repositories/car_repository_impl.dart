@@ -1,3 +1,4 @@
+import 'package:car_info/data/api_result/api_result.dart';
 import 'package:car_info/data/api_service/gpt_service.dart';
 import 'package:car_info/data/data_source/car_remote_data_source.dart';
 import 'package:car_info/domain/entities/car.dart';
@@ -12,12 +13,12 @@ class CarRepositoryImpl implements CarRepository {
   CarRepositoryImpl(this.remoteDataSource, this.gptService);
 
   @override
-  Future<List<Car>> getCarInfo(String keywords) async {
+  Future<APIResult<List<Car>>> getCarInfo(String keywords) async {
     return await remoteDataSource.getCarData(keywords);
   }
 
   @override
-  Future<List<Car>> getCarsDataFromAI(String query) async {
+  Future<APIResult<List<Car>>> getCarsDataFromAI(String query) async {
     return await gptService.fetchCarsDataFromGpt(query);
   }
 
