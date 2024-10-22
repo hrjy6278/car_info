@@ -11,6 +11,7 @@ class Car with _$Car {
     required String model,
     required int year,
     required String engine,
+    required String trim,
     int? horsepower,
     double? zeroTo100Kph,
     double? zeroTo200Kph,

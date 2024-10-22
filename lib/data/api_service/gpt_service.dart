@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:car_info/domain/entities/car.dart';
 import 'package:chat_gpt_sdk/chat_gpt_sdk.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -5,27 +7,28 @@ import 'package:injectable/injectable.dart';
 
 @injectable
 class GptService {
+  final prompt = dotenv.env['PROMPT'];
   late OpenAI openAI;
 
   GptService() {
-    final apiKey = dotenv.env['OPENAI_API_KEY'];
     openAI = OpenAI.instance.build(
-        token: apiKey!,
-        baseOption: HttpSetup(receiveTimeout: const Duration(seconds: 5)));
+      token: dotenv.env['OPENAI_API_KEY'],
+      baseOption: HttpSetup(receiveTimeout: const Duration(seconds: 60)),
+      enableLog: true,
+    );
   }
 
   Future<List<Car>> fetchCarsDataFromGpt(String query) async {
     try {
       final request = ChatCompleteText(
-        model: Gpt4O2024ChatModel(),
+        model: Gpt4oMini2024ChatModel(),
         messages: [
           {
             'role': 'user',
-            'content':
-                'Provide car specifications for cars that match "$query" in JSON format'
+            'content': '$prompt, keyword is $query',
           }
         ],
-        maxToken: 200,
+        maxToken: 4096,
         temperature: 0,
       );
 
@@ -45,13 +48,19 @@ class GptService {
     }
   }
 
-  // 응답 데이터를 Freezed Car 엔티티 리스트로 변환
   List<Car> _parseCarsData(String rawData) {
-    final List<dynamic> carsJson = rawData
-        .split('\n')
-        .where((line) => line.isNotEmpty)
-        .map((line) => line.trim())
-        .toList();
-    return carsJson.map((json) => Car.fromJson(json)).toList();
+    // GPT에서 올 수 있는 비 JSON 텍스트 제거 (예: ```json)
+    final cleanedData = rawData.replaceAll(RegExp(r'```json|```'), '').trim();
+
+    // JSON 파싱
+    final dynamic jsonData = jsonDecode(cleanedData);
+
+    if (jsonData is List) {
+      return jsonData
+          .map((carJson) => Car.fromJson(carJson as Map<String, dynamic>))
+          .toList();
+    } else {
+      return [];
+    }
   }
 }

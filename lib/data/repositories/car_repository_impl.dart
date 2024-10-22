@@ -12,7 +12,7 @@ class CarRepositoryImpl implements CarRepository {
   CarRepositoryImpl(this.remoteDataSource, this.gptService);
 
   @override
-  Future<List<Car>> getCarInfo(List<String> keywords) async {
+  Future<List<Car>> getCarInfo(String keywords) async {
     return await remoteDataSource.getCarData(keywords);
   }
 
@@ -22,7 +22,13 @@ class CarRepositoryImpl implements CarRepository {
   }
 
   @override
-  Future<void> saveCarsDataToFirebase(List<Car> cars) async {
-    await remoteDataSource.saveCarsData(cars);
+  Future<void> saveCarsDataToFirebase({
+    required String keyword,
+    required List<Car> cars,
+  }) async {
+    return await remoteDataSource.saveCarsData(
+      keyword: keyword,
+      cars: cars,
+    );
   }
 }
