@@ -2,7 +2,7 @@ import 'package:car_info/firebase_options.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'util/di/service_locator.dart';
+import 'util/di/service_locator.dart';
 import 'package:car_info/presentation/future/search_car/screen/search_car_screen.dart';
 
 Future<void> main() async {
@@ -23,7 +23,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: SearchCarScreen(),
+      home: const SearchCarScreen(),
       theme: ThemeData(fontFamily: 'Pretendard'),
     );
   }
